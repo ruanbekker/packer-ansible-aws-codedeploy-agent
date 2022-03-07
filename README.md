@@ -24,3 +24,31 @@ Then package the AMI with packer:
 ```bash
 $ packer build packer.json
 ```
+
+## Further Development
+
+To use terraform to deploy a EC2 instance of the AMI that was built using packer you can use something like this:
+
+```
+data "aws_caller_identity" "current" {}
+
+variable "ami_prefix" {
+  type    = string
+  default = "packer-codedeploy-agent-" 
+}
+
+data "aws_ami" "packer" {
+  owners      = [data.aws_caller_identity.current.account_id]
+  most_recent = true
+
+  filter {
+    name   = "tag:Name"
+    values = ["${var.ami_prefix}*"]
+  }
+}
+
+resource "aws_instance" "node" {
+  ami = data.aws_ami.packer.id
+  ...
+}
+```
