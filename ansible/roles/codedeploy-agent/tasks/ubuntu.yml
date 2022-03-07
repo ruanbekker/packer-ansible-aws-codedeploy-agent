@@ -1,0 +1,44 @@
+---
+- name: Ensure OS is up to date
+  tags: os
+  apt:
+    upgrade: dist
+    update_cache: yes
+
+- name: Install dependencies and utilities
+  tags: dependencies
+  apt:
+    name:
+      - wget
+      - curl
+      - net-tools
+      - ruby-full
+    state: latest
+
+- name: Download codedeploy-agent installer
+  tags: installer
+  get_url:
+    url: "https://{{ aws_codedeploy_bucket }}-{{ aws_codedeploy_region }}.s3.{{ aws_codedeploy_region }}.amazonaws.com/latest/install"
+    dest: /root/install
+    mode: '0755'
+
+- name: Change installer permissions
+  tags: installer
+  file:
+    path: /root/install
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Run codedeploy-agent installer
+  tags: installer
+  ansible.builtin.shell: /root/install auto 
+  args:
+    executable: /bin/bash
+    chdir: /root/
+
+- name: Ensure codedeploy-agent is started
+  tags: status
+  ansible.builtin.service:
+    name: codedeploy-agent
+    state: started
